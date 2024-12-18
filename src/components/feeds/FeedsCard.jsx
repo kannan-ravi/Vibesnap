@@ -22,11 +22,13 @@ import {
   increasePostTotalLike,
 } from "../../app/features/postSlice";
 import { addLikedPost, removeLikedPost } from "../../app/features/userSlice";
+import FeedsSharePopup from "./FeedsSharePopup";
 
 const FeedsCard = ({ data }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const [activeSwiperIndex, setActiveSwiperIndex] = useState(0);
+  const [isSharePopupActive, setIsSharePopupActive] = useState(false);
 
   const isPostLikedByUser = (user_liked_posts) => {
     return user_liked_posts.includes(data.id);
@@ -149,16 +151,22 @@ const FeedsCard = ({ data }) => {
 
             <p>{data.total_likes}</p>
           </div>
-          <div className="flex items-center justify-start gap-2 px-4 py-2 bg-pink-100 rounded-full cursor-pointer">
-            <FaLocationArrow aria-label="Share this post" role="button" />
+          <div
+            className="flex items-center justify-start gap-2 px-4 py-2 bg-pink-100 rounded-full cursor-pointer"
+            aria-label="Share this post"
+            role="button"
+            onClick={() => setIsSharePopupActive(true)}
+          >
+            <FaLocationArrow />
             <p>Share</p>
           </div>
         </div>
       </div>
 
-      {/* <div>
-
-      </div> */}
+      <FeedsSharePopup
+        isSharePopupActive={isSharePopupActive}
+        setIsSharePopupActive={setIsSharePopupActive}
+      />
     </>
   );
 };

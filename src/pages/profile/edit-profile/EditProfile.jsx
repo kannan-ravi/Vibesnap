@@ -8,11 +8,14 @@ import { editProfile } from "../../../app/features/userSlice";
 import { useNavigate } from "react-router-dom";
 import { DEFAULT_AVATAR } from "../../../constants/default-value";
 import { toastSuccess } from "../../../app/features/toastSlice";
+import { storage } from "../../../../appwrite";
+import { ID } from "appwrite";
 
 const EditProfile = () => {
   const { user } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isProfileImageUploading, setIsProfileImageUploading] = useState(false);
   const [editUser, setEditUser] = useState({
     name: user.displayName,
     bio: user.bio,
@@ -23,6 +26,35 @@ const EditProfile = () => {
       ...editUser,
       [e.target.id]: e.target.value,
     });
+  };
+
+  const handleChangeProfilePicture = async (e) => {
+    try {
+      setIsProfileImageUploading(true);
+      const response = await storage.createFile(
+        import.meta.env.VITE_APPWRITE_USER_BUCKET_ID,
+        ID.unique(),
+        e.target.files[0]
+      );
+
+      const fileUrl = `${
+        import.meta.env.VITE_APPWRITE_ENDPOINT
+      }/storage/buckets/${import.meta.env.VITE_APPWRITE_USER_BUCKET_ID}/files/${
+        response.$id
+      }/view?project=${import.meta.env.VITE_APPWRITE_PROJECT_ID}`;
+
+      const docRef = doc(db, "users", user.uid);
+      await updateDoc(docRef, {
+        photoURL: fileUrl,
+      });
+
+      dispatch(editProfile({ ...user, photoURL: fileUrl }));
+      dispatch(toastSuccess("Profile picture updated"));
+    } catch (error) {
+      console.log(error.message);
+    } finally {
+      setIsProfileImageUploading(false);
+    }
   };
 
   const onSubmit = async (e) => {
@@ -37,25 +69,36 @@ const EditProfile = () => {
       console.log(error.message);
     }
   };
-  
+
   return (
     <div className="relative">
       <ProfileBanner />
 
       <div className="h-full px-4">
         <div className="flex items-end justify-start gap-7 -translate-y-2/4">
-          <div className="relative">
+          <label className="relative cursor-pointer" htmlFor="profile-picture">
+            {isProfileImageUploading && (
+              <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full bg-opacity-50 rounded-full bg-gray-50">
+                <div class="h-6 w-6 border-2 border-t-2 border-black animate-spin"></div>
+              </div>
+            )}
             <img
               src={user.photoURL ? user.photoURL : DEFAULT_AVATAR}
               alt={
                 user.displayName ? user.displayName + " Image" : "User Image"
               }
-              className="rounded-full w-28 h-28"
+              className="object-cover rounded-full w-28 h-28"
+            />
+            <input
+              type="file"
+              id="profile-picture"
+              className="hidden"
+              onChange={handleChangeProfilePicture}
             />
             <div className="absolute bottom-0 right-0 flex items-center justify-center rounded-full bg-gray-50 w-9 h-9">
               <FaPencil />
             </div>
-          </div>
+          </label>
         </div>
 
         <form onSubmit={onSubmit}>

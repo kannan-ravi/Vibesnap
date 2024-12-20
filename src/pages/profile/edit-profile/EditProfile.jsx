@@ -72,14 +72,14 @@ const EditProfile = () => {
 
   return (
     <div className="relative">
-      <ProfileBanner />
+      <ProfileBanner editable={true} />
 
       <div className="h-full px-4">
         <div className="flex items-end justify-start gap-7 -translate-y-2/4">
           <label className="relative cursor-pointer" htmlFor="profile-picture">
             {isProfileImageUploading && (
               <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full bg-opacity-50 rounded-full bg-gray-50">
-                <div class="h-6 w-6 border-2 border-t-2 border-black animate-spin"></div>
+                <div className="w-6 h-6 border-2 border-t-2 border-black animate-spin"></div>
               </div>
             )}
             <img

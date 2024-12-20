@@ -10,7 +10,7 @@ const FeedsHeader = () => {
       <img
         src={user.photoURL ? user.photoURL : DEFAULT_AVATAR}
         alt=""
-        className="w-12 h-12 rounded-full"
+        className="object-cover w-12 h-12 rounded-full"
       />
       <div className="">
         <p className="text-sm text-gray-500">Welcome Back,</p>

@@ -29,11 +29,11 @@ const Profile = () => {
     <div className="relative">
       <ProfileBanner />
       <div className="px-4">
-        <div className="flex items-end justify-start gap-7 -translate-y-2/4">
+        <div className="flex items-end justify-start gap-4 -translate-y-2/4">
           <img
             src={user.photoURL ? user.photoURL : DEFAULT_AVATAR}
             alt=""
-            className="rounded-full w-28 h-28"
+            className="object-cover rounded-full min-w-28 min-h-28 max-w-28 max-h-28"
           />
           <Link
             to="/profile/edit-profile"

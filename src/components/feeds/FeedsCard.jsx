@@ -113,7 +113,7 @@ const FeedsCard = ({ data }) => {
                 ? data.posted_by.displayName
                 : "User Image"
             }
-            className="w-10 h-10 rounded-full"
+            className="object-cover w-10 h-10 rounded-full"
           />
           <div>
             <p className="font-medium">{data.posted_by.displayName}</p>

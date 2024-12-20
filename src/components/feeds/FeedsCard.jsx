@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { FaHeart, FaLocationArrow } from "react-icons/fa";
 import { DEFAULT_AVATAR } from "../../constants/default-value";
 
@@ -23,15 +23,30 @@ import {
 } from "../../app/features/postSlice";
 import { addLikedPost, removeLikedPost } from "../../app/features/userSlice";
 import FeedsSharePopup from "./FeedsSharePopup";
+import { toastSuccess } from "../../app/features/toastSlice";
+import { FaPause, FaPlay } from "react-icons/fa6";
 
 const FeedsCard = ({ data }) => {
   const dispatch = useDispatch();
+  const videoPreviewRef = useRef(null);
   const { user } = useSelector((state) => state.user);
   const [activeSwiperIndex, setActiveSwiperIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isSharePopupActive, setIsSharePopupActive] = useState(false);
 
   const isPostLikedByUser = (user_liked_posts) => {
     return user_liked_posts.includes(data.id);
+  };
+
+  const handlePlayClick = () => {
+    if (videoPreviewRef.current) {
+      if (isPlaying) {
+        videoPreviewRef.current.pause();
+      } else {
+        videoPreviewRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const handlePostLiked = async () => {
@@ -40,20 +55,20 @@ const FeedsCard = ({ data }) => {
       const userDocRef = doc(db, "users", user.uid);
       if (isPostLikedByUser(user.liked_posts)) {
         await updateDoc(userDocRef, {
-          liked_posts: arrayRemove(data.id),
+          liked_posts: arrayRemove(doc(db, `posts/${data.id}`)),
         });
         await updateDoc(postDocRef, { total_likes: increment(-1) });
         dispatch(decreasePostTotalLike(data.id));
         dispatch(removeLikedPost(data.id));
-        console.log("Post Unliked");
+        dispatch(toastSuccess("Post Unliked"));
       } else {
         await updateDoc(userDocRef, {
-          liked_posts: arrayUnion(data.id),
+          liked_posts: arrayUnion(doc(db, `posts/${data.id}`)),
         });
         await updateDoc(postDocRef, { total_likes: increment(1) });
         dispatch(increasePostTotalLike(data.id));
         dispatch(addLikedPost(data.id));
-        console.log("Post Liked");
+        dispatch(toastSuccess("Post Liked"));
       }
     } catch (error) {
       console.log(error.message);
@@ -111,7 +126,7 @@ const FeedsCard = ({ data }) => {
         <p className="mt-5">
           {`${data.descripton} `}
           {data.hash_tags.map((tag, index) => (
-            <span key={index} className="text-blue-500">{`${tag} `}</span>
+            <span key={index} className="text-blue-500">{`#${tag} `}</span>
           ))}
         </p>
 
@@ -126,11 +141,32 @@ const FeedsCard = ({ data }) => {
             </p>
             {data.files_url.map((file_url, index) => (
               <SwiperSlide key={index}>
-                <img
-                  src={file_url}
-                  alt={`Post image ${index + 1}`}
-                  className="object-cover w-full rounded-lg max-h-72"
-                />
+                {data.files_type === "photos" ? (
+                  <img
+                    src={file_url}
+                    alt={`Post image ${index + 1}`}
+                    className="object-cover w-full rounded-lg max-h-72"
+                  />
+                ) : data.files_type === "videos" ? (
+                  <div className="relative">
+                    <video
+                      src={file_url}
+                      controls={false}
+                      ref={videoPreviewRef}
+                      className="object-cover w-full rounded-lg max-h-72"
+                    />
+                    <div
+                      className="absolute z-10 top-1/2 left-1/2 p-3 bg-[rgba(0,0,0,0.5)] rounded-full -translate-y-1/2 -translate-x-1/2"
+                      onClick={handlePlayClick}
+                    >
+                      {isPlaying ? (
+                        <FaPause className="text-2xl text-white" />
+                      ) : (
+                        <FaPlay className="text-2xl text-white" />
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </SwiperSlide>
             ))}
           </Swiper>

@@ -7,6 +7,7 @@ import { db } from "../../../../firebase";
 import { editProfile } from "../../../app/features/userSlice";
 import { useNavigate } from "react-router-dom";
 import { DEFAULT_AVATAR } from "../../../constants/default-value";
+import { toastSuccess } from "../../../app/features/toastSlice";
 
 const EditProfile = () => {
   const { user } = useSelector((state) => state.user);
@@ -29,13 +30,14 @@ const EditProfile = () => {
     try {
       const docRef = doc(db, "users", user.uid);
       await updateDoc(docRef, editUser);
-      console.log("Document updated successfully");
       dispatch(editProfile(editUser));
+      dispatch(toastSuccess("Profile updated"));
       navigate("/profile");
     } catch (error) {
       console.log(error.message);
     }
   };
+  
   return (
     <div className="relative">
       <ProfileBanner />

@@ -13,42 +13,11 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addUser } from "../../app/features/userSlice";
+import { getPosts } from "../../constants/firebase-function";
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  const getPosts = async (postsRefArray, fields = []) => {
-    if (!Array.isArray(postsRefArray) || postsRefArray.length === 0) {
-      return [];
-    }
-
-    try {
-      const postsData = await Promise.all(
-        postsRefArray.map(async (postRef) => {
-          const postSnap = await getDoc(postRef);
-          if (postSnap.exists()) {
-            const postData = postSnap.data();
-
-            const result = { id: postSnap.id };
-            fields.forEach((field) => {
-              if (postData[field] !== undefined) {
-                result[field] = postData[field];
-              }
-            });
-
-            return result;
-          }
-          return null;
-        })
-      );
-
-      return postsData.filter((post) => post !== null);
-    } catch (error) {
-      console.log(error);
-      return [];
-    }
-  };
 
   const loginWithGoogleAuth = async () => {
     try {
@@ -68,11 +37,20 @@ const Login = () => {
       const userSnapshot = await getDoc(userRef);
       if (userSnapshot.exists()) {
         const existingUserData = userSnapshot.data();
-        const fieldsToExtract = ["files_url", "descripton", "total_likes"];
-        const extractedPosts = await getPosts(existingUserData.posts, fieldsToExtract);
-        const extractedLikedPosts = await getPosts(
-          existingUserData.liked_posts
+        const fieldsToExtract = [
+          "files_url",
+          "descripton",
+          "files_type",
+          "total_likes",
+        ];
+
+        const postsRefs = existingUserData.posts.map((postRef) => postRef.id);
+        const likedPostsRefs = existingUserData.liked_posts.map(
+          (postRef) => postRef.id
         );
+
+        const extractedPosts = await getPosts(postsRefs, fieldsToExtract);
+        const extractedLikedPosts = await getPosts(likedPostsRefs);
 
         dispatch(
           addUser({

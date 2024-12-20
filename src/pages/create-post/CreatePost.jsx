@@ -17,17 +17,29 @@ import { storage } from "../../../appwrite";
 import "swiper/css";
 import { ID } from "appwrite";
 import { db } from "../../../firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { useSelector } from "react-redux";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { useDispatch, useSelector } from "react-redux";
+import { getPosts } from "../../constants/firebase-function";
+import { toastSuccess } from "../../app/features/toastSlice";
+import { editProfile } from "../../app/features/userSlice";
 
 const CreatePost = () => {
   const navigate = useNavigate();
   const videoPreviewRef = useRef(null);
+  const dispatch = useDispatch();
   const [content, setContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreview, setFilePreview] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeSwiperIndex, setActiveSwiperIndex] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useSelector((state) => state.user);
 
@@ -69,9 +81,11 @@ const CreatePost = () => {
           file
         );
         uploadedFiles.push(
-          `${import.meta.env.VITE_APPWRITE_ENDPOINT}/buckets/${
+          `${import.meta.env.VITE_APPWRITE_ENDPOINT}/storage/buckets/${
             import.meta.env.VITE_APPWRITE_POST_BUCKET_ID
-          }/files/${response.$id}`
+          }/files/${response.$id}/view?project=${
+            import.meta.env.VITE_APPWRITE_PROJECT_ID
+          }`
         );
       }
       return uploadedFiles;
@@ -95,9 +109,29 @@ const CreatePost = () => {
     return extractedContent;
   };
 
+  const updateUserWithPostRef = async (postID) => {
+    try {
+      const docRef = doc(db, "users", user.uid);
+      await updateDoc(docRef, {
+        posts: arrayUnion(doc(db, `posts/${postID}`)),
+      });
+
+      const fieldsToExtract = [
+        "files_url",
+        "descripton",
+        "files_type",
+        "total_likes",
+      ];
+      const newPost = await getPosts([postID], fieldsToExtract);
+      dispatch(editProfile({ ...user, posts: [...user.posts, ...newPost] }));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("loading started");
+    setIsUploading(true);
     try {
       const uploadedFiles = await handleFileUpload(selectedFiles);
       if (uploadedFiles.length > 0) {
@@ -109,17 +143,19 @@ const CreatePost = () => {
             : "photos",
           files_url: uploadedFiles,
           hash_tags: extractHashTagsFromContent(content),
-          posted_by: `users/${user.uid}`,
+          posted_by: doc(db, `users/${user.uid}`),
           total_likes: 0,
         };
         const docRef = await addDoc(collection(db, "posts"), post);
-        console.log("Document updated successfully", docRef);
+
+        updateUserWithPostRef(docRef.id);
+        dispatch(toastSuccess("Post created successfully"));
         navigate("/");
       }
     } catch (error) {
       console.log("Error uploading file:", error);
     } finally {
-      console.log("loading ended");
+      setIsUploading(false);
     }
   };
 
@@ -233,9 +269,26 @@ const CreatePost = () => {
         <div className="fixed left-0 flex justify-center w-full px-4 bottom-5">
           <button
             type="submit"
-            className="w-full max-w-md py-3 font-medium text-center text-white uppercase bg-black border rounded-full"
+            disabled={isUploading}
+            className="w-full max-w-md py-3 font-medium text-center text-white uppercase bg-black border rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            save
+            {isUploading ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                  className="mr-2 animate-spin"
+                  viewBox="0 0 1792 1792"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M526 1394q0 53-37.5 90.5t-90.5 37.5q-52 0-90-38t-38-90q0-53 37.5-90.5t90.5-37.5 90.5 37.5 37.5 90.5zm498 206q0 53-37.5 90.5t-90.5 37.5-90.5-37.5-37.5-90.5 37.5-90.5 90.5-37.5 90.5 37.5 37.5 90.5zm-704-704q0 53-37.5 90.5t-90.5 37.5-90.5-37.5-37.5-90.5 37.5-90.5 90.5-37.5 90.5 37.5 37.5 90.5zm1202 498q0 52-38 90t-90 38q-53 0-90.5-37.5t-37.5-90.5 37.5-90.5 90.5-37.5 90.5 37.5 37.5 90.5zm-964-996q0 66-47 113t-113 47-113-47-47-113 47-113 113-47 113 47 47 113zm1170 498q0 53-37.5 90.5t-90.5 37.5-90.5-37.5-37.5-90.5 37.5-90.5 90.5-37.5 90.5 37.5 37.5 90.5zm-640-704q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm530 206q0 93-66 158.5t-158 65.5q-93 0-158.5-65.5t-65.5-158.5q0-92 65.5-158t158.5-66q92 0 158 66t66 158z"></path>
+                </svg>
+                loading
+              </span>
+            ) : (
+              "Create"
+            )}
           </button>
         </div>
       </form>

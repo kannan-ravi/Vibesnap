@@ -49,14 +49,13 @@ const Feeds = () => {
         snapShot.docs.map(async (doc) => {
           const postData = { id: doc.id, ...doc.data() };
           const userData = await getUserData(postData.posted_by);
-
           return {
             ...postData,
             posted_by: userData,
           };
         })
       );
-      dispatch(fetchAllPost(newItems));
+      dispatch(fetchAllPost(newItems.reverse()));
     } catch (error) {
       console.log(error);
     }
@@ -88,9 +87,13 @@ const Feeds = () => {
       <h1 className="mt-8 text-3xl font-semibold">Feeds</h1>
 
       <div className="flex flex-col gap-10 mt-5">
-        {posts?.map((post) => (
-          <FeedsCard key={post.id} data={post} />
-        ))}
+        {posts && posts.length > 0 ? (
+          posts?.map((post) => <FeedsCard key={post.id} data={post} />)
+        ) : (
+          <div className="mt-10">
+            <p className="text-lg text-center">No Post Found</p>
+          </div>
+        )}
       </div>
 
       <Link

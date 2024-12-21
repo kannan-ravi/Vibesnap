@@ -7,7 +7,7 @@ import ImageO5 from "../../assets/login/image-05.png";
 import ImageO6 from "../../assets/login/image-06.png";
 import ImageO7 from "../../assets/login/image-07.png";
 
-import { app, db } from "../../../firebase";
+import { app, db, auth } from "../../../firebase";
 import { GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +21,6 @@ const Login = () => {
 
   const loginWithGoogleAuth = async () => {
     try {
-      const auth = getAuth(app);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 

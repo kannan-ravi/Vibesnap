@@ -21,8 +21,17 @@ export const postSlice = createSlice({
       const post = state.posts.find((post) => post.id === action.payload);
       post ? (post.total_likes = post.total_likes - 1) : null;
     },
+
+    removeAllPost: (state) => {
+      state.posts = [];
+    },
   },
 });
 
-export const { fetchAllPost, increasePostTotalLike, decreasePostTotalLike } = postSlice.actions;
+export const {
+  fetchAllPost,
+  increasePostTotalLike,
+  decreasePostTotalLike,
+  removeAllPost,
+} = postSlice.actions;
 export default postSlice.reducer;

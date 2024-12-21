@@ -29,7 +29,7 @@ const Feeds = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  const LIMIT = 1;
+  const LIMIT = 20;
 
   const getUserData = async (userRef) => {
     if (!userRef) return null;
@@ -116,13 +116,13 @@ const Feeds = () => {
       <h1 className="mt-8 text-3xl font-semibold">Feeds</h1>
 
       <div className="flex flex-col gap-10 mt-5">
-        {posts && posts.length > 0 ? (
-          posts?.map((post) => <FeedsCard key={post.id} data={post} />)
-        ) : (
-          <div className="mt-10">
-            <p className="text-lg text-center">No Post Found</p>
-          </div>
-        )}
+        {posts && posts.length > 0 && !loading
+          ? posts?.map((post) => <FeedsCard key={post.id} data={post} />)
+          : !loading && (
+              <div className="mt-10">
+                <p className="text-lg text-center">No Post Found</p>
+              </div>
+            )}
       </div>
 
       {loading && (

@@ -27,7 +27,7 @@ import {
 } from "firebase/firestore";
 import { useDispatch, useSelector } from "react-redux";
 import { getPosts } from "../../constants/firebase-function";
-import { toastSuccess } from "../../app/features/toastSlice";
+import { toastError, toastSuccess } from "../../app/features/toastSlice";
 import { editProfile } from "../../app/features/userSlice";
 
 const CreatePost = () => {
@@ -132,30 +132,36 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsUploading(true);
-    try {
-      const uploadedFiles = await handleFileUpload(selectedFiles);
-      if (uploadedFiles.length > 0) {
-        const post = {
-          created_at: serverTimestamp(),
-          descripton: extractContenWithoutHashtags(content),
-          files_type: selectedFiles[0]?.type.startsWith("video")
-            ? "videos"
-            : "photos",
-          files_url: uploadedFiles,
-          hash_tags: extractHashTagsFromContent(content),
-          posted_by: doc(db, `users/${user.uid}`),
-          total_likes: 0,
-        };
-        const docRef = await addDoc(collection(db, "posts"), post);
+    if (content && selectedFiles.length > 0) {
+      try {
+        const uploadedFiles = await handleFileUpload(selectedFiles);
+        if (uploadedFiles.length > 0) {
+          const post = {
+            created_at: serverTimestamp(),
+            descripton: extractContenWithoutHashtags(content),
+            files_type: selectedFiles[0]?.type.startsWith("video")
+              ? "videos"
+              : "photos",
+            files_url: uploadedFiles,
+            hash_tags: extractHashTagsFromContent(content),
+            posted_by: doc(db, `users/${user.uid}`),
+            total_likes: 0,
+          };
+          const docRef = await addDoc(collection(db, "posts"), post);
 
-        updateUserWithPostRef(docRef.id);
-        dispatch(toastSuccess("Post created successfully"));
-        navigate("/");
+          updateUserWithPostRef(docRef.id);
+          dispatch(toastSuccess("Post created successfully"));
+          navigate("/");
+        }
+      } catch (error) {
+        console.log("Error uploading file:", error);
+        dispatch(toastError("Error creating post"));
+      } finally {
+        setIsUploading(false);
       }
-    } catch (error) {
-      console.log("Error uploading file:", error);
-    } finally {
+    } else {
       setIsUploading(false);
+      dispatch(toastError("Please add content and select a file"));
     }
   };
 

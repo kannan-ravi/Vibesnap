@@ -9,7 +9,7 @@ export const postSlice = createSlice({
   initialState,
   reducers: {
     fetchAllPost: (state, action) => {
-      state.posts = action.payload;
+      state.posts = action.payload.reverse();
     },
 
     increasePostTotalLike: (state, action) => {

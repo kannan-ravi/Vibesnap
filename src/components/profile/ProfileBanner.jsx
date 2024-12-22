@@ -8,6 +8,7 @@ import { storage } from "../../../appwrite";
 import { ID } from "appwrite";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../../firebase";
+import { DEFAULT_BANNER } from "../../constants/default-value";
 
 const ProfileBanner = ({ editable = false }) => {
   const navigate = useNavigate();
@@ -48,7 +49,11 @@ const ProfileBanner = ({ editable = false }) => {
     <>
       <div
         className="relative bg-no-repeat bg-cover min-h-48"
-        style={{ backgroundImage: `url(${user?.banner_image})` }}
+        style={{
+          backgroundImage: user.banner_image
+            ? `url(${user?.banner_image})`
+            : `url(${DEFAULT_BANNER})`,
+        }}
       >
         {isProfileBannerUploading && (
           <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full bg-opacity-50 bg-gray-50">

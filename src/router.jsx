@@ -7,10 +7,16 @@ import DefaultMobileLayout from "./layouts/DefaultMobileLayout";
 const NotFound = lazy(() => import("./pages/not-found/NotFound"));
 const CreatePost = lazy(() => import("./pages/create-post/CreatePost"));
 const Profile = lazy(() => import("./pages/profile/profile"));
-const EditProfile = lazy(() => import("./pages/profile/edit-profile/EditProfile"));
+const EditProfile = lazy(() =>
+  import("./pages/profile/edit-profile/EditProfile")
+);
 const Login = lazy(() => import("./pages/login/Login"));
-
+const CameraCapture = lazy(() =>
+  import("./pages/camera-capture/CameraCapture")
+);
 import ProtectedRoute from "./ProtectedRoute";
+
+import Loader from "./components/ui/Loader";
 
 const router = createBrowserRouter([
   {
@@ -28,12 +34,24 @@ const router = createBrowserRouter([
           },
           {
             path: "/create-post",
-            element: <CreatePost />,
+            element: (
+              <Suspense fallback={<Loader />}>
+                <CreatePost />
+              </Suspense>
+            ),
+          },
+          {
+            path: "/capture",
+            element: (
+              <Suspense fallback={<Loader />}>
+                <CameraCapture />
+              </Suspense>
+            ),
           },
           {
             path: "/profile",
             element: (
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<Loader />}>
                 <Profile />
               </Suspense>
             ),
@@ -41,7 +59,7 @@ const router = createBrowserRouter([
           {
             path: "/profile/edit-profile",
             element: (
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<Loader />}>
                 <EditProfile />
               </Suspense>
             ),
@@ -51,7 +69,7 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: (
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<Loader />}>
             <Login />
           </Suspense>
         ),

@@ -10,7 +10,7 @@ import {
   FaViadeo,
   FaVideo,
 } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { storage } from "../../../appwrite";
@@ -26,22 +26,27 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useDispatch, useSelector } from "react-redux";
-import { getPosts } from "../../constants/firebase-function";
+import { getPosts } from "../../utils/firebase-function";
 import { toastError, toastSuccess } from "../../app/features/toastSlice";
 import { editProfile } from "../../app/features/userSlice";
+import {
+  base64ToBlob,
+  extractContenWithoutHashtags,
+  extractHashTagsFromContent,
+  handlePlayClick,
+} from "../../utils/functions";
+import FilePreview from "../../components/create-post/FilePreview";
+import { setCapturedImage } from "../../app/features/miscellaneousSlice";
 
 const CreatePost = () => {
   const navigate = useNavigate();
-  const videoPreviewRef = useRef(null);
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.user);
+  const { capturedImage } = useSelector((state) => state.miscellaneous);
   const [content, setContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [filePreview, setFilePreview] = useState([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activeSwiperIndex, setActiveSwiperIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-
-  const { user } = useSelector((state) => state.user);
 
   const onContentChange = (e) => {
     setContent(e.target.value);
@@ -52,23 +57,16 @@ const CreatePost = () => {
     const preview = files.map((file) => URL.createObjectURL(file));
     setSelectedFiles(files);
     setFilePreview(preview);
+    dispatch(setCapturedImage(""));
+    e.target.value = null;
   };
 
   const handleDeleteSelectedFile = (index) => {
     const updatedFiles = selectedFiles.filter((_, i) => i !== index);
     const updatedPreview = filePreview.filter((_, i) => i !== index);
+    URL.revokeObjectURL(filePreview[index]);
     setSelectedFiles(updatedFiles);
     setFilePreview(updatedPreview);
-  };
-  const handlePlayClick = () => {
-    if (videoPreviewRef.current) {
-      if (isPlaying) {
-        videoPreviewRef.current.pause();
-      } else {
-        videoPreviewRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
   };
 
   const handleFileUpload = async (files) => {
@@ -91,22 +89,8 @@ const CreatePost = () => {
       return uploadedFiles;
     } catch (error) {
       console.log("Error uploading file:", error);
+      dispatch(toastError("Error uploading file"));
     }
-  };
-
-  const extractHashTagsFromContent = (content) => {
-    const regex = /#(\w+)/g;
-    const hashTags = [];
-    let match;
-    while ((match = regex.exec(content))) {
-      hashTags.push(match[1]);
-    }
-    return hashTags;
-  };
-
-  const extractContenWithoutHashtags = (content) => {
-    const extractedContent = content.replace(/#(\w+)/g, "").trim();
-    return extractedContent;
   };
 
   const updateUserWithPostRef = async (postID) => {
@@ -132,9 +116,24 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsUploading(true);
-    if (content && selectedFiles.length > 0) {
+    if (content && (selectedFiles.length > 0 || capturedImage)) {
       try {
-        const uploadedFiles = await handleFileUpload(selectedFiles);
+        let filesToUpload;
+        if (capturedImage) {
+          const contentType = capturedImage.match(/data:(.*);base64,/)[1];
+          const blob = base64ToBlob(capturedImage, contentType);
+          const file = new File(
+            [blob],
+            `captured-image-of-${user.displayName}.jpg`,
+            {
+              type: contentType,
+            }
+          );
+          filesToUpload = [file];
+        } else {
+          filesToUpload = selectedFiles;
+        }
+        const uploadedFiles = await handleFileUpload(filesToUpload);
         if (uploadedFiles.length > 0) {
           const post = {
             created_at: serverTimestamp(),
@@ -151,6 +150,7 @@ const CreatePost = () => {
 
           updateUserWithPostRef(docRef.id);
           dispatch(toastSuccess("Post created successfully"));
+          dispatch(setCapturedImage(""));
           navigate("/");
         }
       } catch (error) {
@@ -165,69 +165,38 @@ const CreatePost = () => {
     }
   };
 
+  const handleDeleteCamperaImage = () => {
+    dispatch(setCapturedImage(""));
+  };
+
   return (
     <div className="relative px-4 pb-36 pt-7">
       <div className="flex items-center justify-start gap-6">
         <FaArrowLeftLong
           className="text-lg cursor-pointer"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
         />
 
         <h1 className="text-xl font-bold">New Post</h1>
       </div>
 
       <form onSubmit={handleSubmit}>
-        {filePreview.length > 0 && (
+        {!capturedImage && filePreview.length > 0 && (
           <div className="flex items-center justify-start gap-4 px-4 mt-8 mb-4">
-            <Swiper
-              spaceBetween={20}
-              slidesPerView={1}
-              onSlideChange={(swiper) =>
-                setActiveSwiperIndex(swiper.activeIndex)
-              }
-            >
-              <p className="absolute z-10 px-3 py-0 font-semibold tracking-widest bg-white top-4 right-4 rounded-3xl">
-                {activeSwiperIndex + 1 + "/" + filePreview.length}
-              </p>
-              {selectedFiles.map((file, index) => (
-                <SwiperSlide key={index}>
-                  {file.type.startsWith("image") ? (
-                    <img
-                      src={filePreview[index]}
-                      alt={`Post image ${index + 1}`}
-                      className="object-cover w-full rounded-lg h-80"
-                    />
-                  ) : file.type.startsWith("video") ? (
-                    <div className="relative">
-                      <video
-                        src={filePreview[index]}
-                        controls={false}
-                        id="video-preview"
-                        ref={videoPreviewRef}
-                        className="object-cover w-full rounded-lg max-h-72"
-                      />
-                      <div
-                        className="absolute z-10 top-1/2 left-1/2 p-3 bg-[rgba(0,0,0,0.5)] rounded-full -translate-y-1/2 -translate-x-1/2"
-                        onClick={handlePlayClick}
-                      >
-                        {isPlaying ? (
-                          <FaPause className="text-2xl text-white" />
-                        ) : (
-                          <FaPlay className="text-2xl text-white" />
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-                  <div
-                    className="p-2 bg-[rgba(0,0,0,0.5)] absolute z-10 bottom-4 right-4 rounded-full"
-                    onClick={() => handleDeleteSelectedFile(index)}
-                  >
-                    <FaTrash className="text-white" />
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <FilePreview
+              filePreview={filePreview}
+              selectedFiles={selectedFiles}
+              handleDeleteSelectedFile={handleDeleteSelectedFile}
+            />
           </div>
+        )}
+
+        {capturedImage && (
+          <FilePreview
+            filePreview={[capturedImage]}
+            selectedFiles={[capturedImage]}
+            handleDeleteSelectedFile={handleDeleteCamperaImage}
+          />
         )}
         <textarea
           id="whats-on-your-mind"
@@ -266,10 +235,13 @@ const CreatePost = () => {
             />
             <p className="font-semibold">Videos</p>
           </label>
-          <div className="flex items-center justify-start gap-3 p-1">
+          <Link
+            to="/capture"
+            className="flex items-center justify-start gap-3 p-1"
+          >
             <FaCamera className="text-lg text-blue-500" />
             <p className="font-semibold">Camera</p>
-          </div>
+          </Link>
         </div>
 
         <div className="fixed left-0 flex justify-center w-full px-4 bottom-5">

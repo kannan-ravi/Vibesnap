@@ -13,7 +13,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addUser } from "../../app/features/userSlice";
-import { getPosts } from "../../constants/firebase-function";
+import { getPosts } from "../../utils/firebase-function";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,6 +30,8 @@ const Login = () => {
         displayName: result.user.displayName,
         photoURL: result.user.photoURL,
         token: result.user.accessToken,
+        liked_posts: [],
+        posts: [],
       };
 
       const userRef = doc(db, "users", userData.uid);

@@ -7,6 +7,7 @@ import { auth } from "../../../firebase";
 import { toastError, toastSuccess } from "../../app/features/toastSlice";
 import { removeUser } from "../../app/features/userSlice";
 import { removeAllPost } from "../../app/features/postSlice";
+import { removeAllMiscellaneous } from "../../app/features/miscellaneousSlice";
 
 const FeedsHeader = () => {
   const { user } = useSelector((state) => state.user);
@@ -18,6 +19,7 @@ const FeedsHeader = () => {
       navigate("/login");
       dispatch(removeUser());
       dispatch(removeAllPost());
+      dispatch(removeAllMiscellaneous());
       dispatch(toastSuccess("Logout successfully"));
     } catch (error) {
       console.error(error);

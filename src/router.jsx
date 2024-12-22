@@ -6,7 +6,7 @@ import DefaultMobileLayout from "./layouts/DefaultMobileLayout";
 
 const NotFound = lazy(() => import("./pages/not-found/NotFound"));
 const CreatePost = lazy(() => import("./pages/create-post/CreatePost"));
-const Profile = lazy(() => import("./pages/profile/profile"));
+const Profile = lazy(() => import("./pages/profile/Profile"));
 const EditProfile = lazy(() =>
   import("./pages/profile/edit-profile/EditProfile")
 );

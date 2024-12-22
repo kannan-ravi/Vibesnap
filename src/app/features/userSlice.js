@@ -15,6 +15,10 @@ export const userSlice = createSlice({
       state.user = { ...state.user, ...action.payload };
     },
 
+    editPost: (state, action) => {
+      state.user.posts = action.payload;
+    },
+
     addLikedPost: (state, action) => {
       state.user.liked_posts.push(action.payload);
     },
@@ -36,6 +40,7 @@ export const {
   addLikedPost,
   removeLikedPost,
   removeUser,
+  editPost,
 } = userSlice.actions;
 
 export default userSlice.reducer;
